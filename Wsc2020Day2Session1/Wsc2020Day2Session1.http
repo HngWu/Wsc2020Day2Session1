@@ -1,0 +1,6 @@
+@Wsc2020Day2Session1_HostAddress = http://localhost:5006
+
+GET {{Wsc2020Day2Session1_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
