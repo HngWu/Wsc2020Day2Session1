@@ -37,6 +37,16 @@ namespace Wsc2020Day2Session1.Controllers
             public string Password { get; set; } = null!;
         }
 
+        public class tempProfile
+        {
+            public string id { get; set; }
+            public int userTypeId { get; set; }
+            public string fullName { get; set; } 
+            public string email { get; set; } 
+            public string password { get; set; }
+        }
+
+
         public class Auth
         {
             public string? token { get; set; }
@@ -249,7 +259,17 @@ namespace Wsc2020Day2Session1.Controllers
 
                 if (competitor != null)
                 {
-                    return Ok(competitor);
+                    var newCompetitor = new tempProfile
+                    {
+                        id = competitor.Id,
+                        userTypeId = competitor.UserTypeId,
+                        fullName = competitor.FullName,
+                        email = competitor.Email,
+                        password = competitor.Password,
+
+                    };
+
+                    return Ok(newCompetitor);
 
                 }
                 else
@@ -278,6 +298,32 @@ namespace Wsc2020Day2Session1.Controllers
         {
             public Boolean isCheckedIn { get; set; }
             public string CompetitorEmail { get; set; } = null!;
+        }
+
+        [HttpGet("checkin/{competitorId}")]
+        public IActionResult checkForCheckIn(string competitorID)
+        {
+
+
+            try
+            {
+                var ischeckedIn = context.CheckIns.Where(x => x.CompetitorId == competitorID).Any();
+                if (ischeckedIn)
+                {
+                    return Ok();
+                }
+                else
+                {
+                    return NotFound();
+                }
+            }
+            catch (Exception)
+            {
+
+                return NotFound();
+            }
+          
+
         }
 
         [HttpPost("checkin")]
