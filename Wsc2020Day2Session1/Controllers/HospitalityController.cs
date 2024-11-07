@@ -17,7 +17,7 @@ namespace Wsc2020Day2Session1.Controllers
 
         public class LoginRequest
         {
-            public string Username { get; set; } = null!;
+            public string Email { get; set; } = null!;
             public string Password { get; set; } = null!;
         }
 
@@ -51,13 +51,28 @@ namespace Wsc2020Day2Session1.Controllers
             public string description { get; set; } = null!;
         }
 
+
+        public class tempAnnouncementToReturn
+        {
+            public int id { get; set; } 
+
+            public string announcementDate { get; set; }
+
+            public string announcementTitle { get; set; }
+
+            public string announcementDescription { get; set; }
+        }
+       
+
         [HttpPost("competitor")]
         public IActionResult AddCompetitor(tempCompetitor competitor)
         {
 
             try
             {
-                var id = Guid.NewGuid().ToString().Take(10).ToString();
+               
+                var id = Guid.NewGuid().ToString().Substring(0, 10);
+               
 
                 var newCompetitor = new User
                 {
@@ -160,13 +175,13 @@ namespace Wsc2020Day2Session1.Controllers
         }
 
         [HttpPost("login")]
-        public IActionResult Login([FromBody] LoginRequest loginRequest)
+        public IActionResult Login(LoginRequest loginRequest)
         {
             try
             {
                 // Find user - adjust this based on your User model properties
                 var user = context.Users.FirstOrDefault(u =>
-                    u.Id == loginRequest.Username &&
+                    u.Email == loginRequest.Email &&
                     u.Password == loginRequest.Password);
 
                 if (user == null)
@@ -199,7 +214,21 @@ namespace Wsc2020Day2Session1.Controllers
             try
             {
                 var announcements = context.Announcements.OrderBy(x => x.Announcementdate).ToList();
-                return Ok(announcements);
+
+                var newAnnouncements = new List<tempAnnouncementToReturn>();
+                foreach (var announcement in announcements)
+                {
+                    var newAnnouncement = new tempAnnouncementToReturn
+                    {
+                        id = announcement.Id,
+                        announcementDate = announcement.Announcementdate.ToString(),
+                        announcementTitle = announcement.AnnouncementTitle,
+                        announcementDescription = announcement.AnnouncementDescription
+                    };
+                    newAnnouncements.Add(newAnnouncement);
+                }
+
+                return Ok(newAnnouncements);
             }
             catch (Exception)
             {
@@ -238,26 +267,52 @@ namespace Wsc2020Day2Session1.Controllers
         }
 
 
-        [HttpGet("checkin/{id}")]
-        public IActionResult checkIn(string id)
+        public class tempCheckIn
+        {
+            public string CompetitorId { get; set; } = null!;
+            public string? checkInTime { get; set; }
+        }
+
+
+        public class tempCheckInResponse
+        {
+            public Boolean isCheckedIn { get; set; }
+            public string CompetitorEmail { get; set; } = null!;
+        }
+
+        [HttpPost("checkin")]
+        public IActionResult checkIn(tempCheckIn checkin)
         {
             try
             {
-                var ischeckedIn = context.CheckIns.Where(x => x.CompetitorId == id).Any();
+                var ischeckedIn = context.CheckIns.Where(x => x.CompetitorId == checkin.CompetitorId).Any();
 
-                if (ischeckedIn)
+                
+                if(context.Users.Where(x => x.Id == checkin.CompetitorId).Any() == false)
                 {
-                    return StatusCode(201);
-
+                    return NotFound();
                 }
-                else
+
+                var competitor = context.Users.Where(x => x.Id == checkin.CompetitorId).FirstOrDefault();
+                if(ischeckedIn)
                 {
                     var checkIn = new CheckIn
                     {
-                        CompetitorId = id,
+                        CompetitorId = checkin.CompetitorId,
                     };
-                    return Ok(checkIn);
+                    context.CheckIns.Add(checkIn);
+                    context.SaveChanges();
                 }
+          
+
+                var response = new tempCheckInResponse
+                {
+                    isCheckedIn = ischeckedIn,
+                    CompetitorEmail = competitor.Email
+                };
+
+                return Ok(response);
+                
             }
             catch (Exception)
             {
